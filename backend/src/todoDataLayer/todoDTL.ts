@@ -13,17 +13,16 @@ export class TodoDTL {
     }
 
     async generateImage(todoId: string): Promise<string> {
-
-        const url = this.s3ClientService.getSignedUrl('putObject', {
+        const url: string = this.s3ClientService.getSignedUrl('putObject', {
             Bucket: this.s3Bucket,
             Key: todoId,
-            Expires: 1000,
+            Expires: 99999,
         });
 
-        return url as string;
+        return url;
     }
 
-    async deleteToDoItem(todoId: string, userId: string): Promise<void> {
+    async deleteToDoImpl(todoId: string, userId: string): Promise<void> {
         const params = {
             TableName: this.todosTable,
             Key: {
@@ -35,15 +34,15 @@ export class TodoDTL {
         await this.docClientService.delete(params).promise();
     }
     
-    async createToDoItem(todoItem: ITodoItem): Promise<ITodoItem> {
+    async createToDoImpl(item: ITodoItem): Promise<ITodoItem> {
         const params = {
             TableName: this.todosTable,
-            Item: todoItem,
+            Item: item,
         };
 
         await this.docClientService.put(params).promise();
 
-        return todoItem as ITodoItem;
+        return item;
     }
 
     async getAllToDoList(userId: string): Promise<ITodoItem[]> {
@@ -58,8 +57,8 @@ export class TodoDTL {
             }
         };
 
-        const result = await this.docClientService.query(params).promise();
-        const items = result.Items as ITodoItem[];
+        const res = await this.docClientService.query(params).promise();
+        const items = res.Items as ITodoItem[];
 
         return items;
     }
@@ -85,8 +84,8 @@ export class TodoDTL {
             ReturnValues: "ALL_NEW"
         };
 
-        const result = await this.docClientService.update(params).promise();
-        const attributes = result.Attributes as ITodoUpdate;
+        const response = await this.docClientService.update(params).promise();
+        const attributes = response.Attributes as ITodoUpdate;
 
         return attributes;
     }

@@ -14,7 +14,7 @@ export function generateImage(todoId: string): Promise<string> {
 
 export function deleteToDoItem(todoId: string, jwtToken: string): Promise<void> {
     const userId = parseUserId(jwtToken);
-    return toDoDTL.deleteToDoItem(todoId, userId);
+    return toDoDTL.deleteToDoImpl(todoId, userId);
 }
 
 export function updateToDoItem(updateTodo: IUpdateTodo, todoId: string, jwtToken: string): Promise<ITodoUpdate> {
@@ -27,17 +27,17 @@ export async function getAllToDoList(jwtToken: string): Promise<ITodoItem[]> {
     return toDoDTL.getAllToDoList(userId);
 }
 
-export function createToDoItem(createTodo: ICreateTodo, jwtToken: string): Promise<ITodoItem> {
-    const userId = parseUserId(jwtToken);
+export function createToDoItem(todo: ICreateTodo, jwtToken: string): Promise<ITodoItem> {
     const todoId =  uuidv4();
+    const userId = parseUserId(jwtToken);
     const s3Bucket = process.env.S3_BUCKET;
     
-    return toDoDTL.createToDoItem({
+    return toDoDTL.createToDoImpl({
         userId: userId,
         todoId: todoId,
-        done: false,
         attachmentUrl:  `https://${s3Bucket}.s3.amazonaws.com/${todoId}`, 
         createdAt: new Date().getTime().toString(),
-        ...createTodo,
+        done: false,
+        ...todo,
     });
 }

@@ -1,5 +1,5 @@
 # TODO: Changee name of the org 
-service: serverless-capstone
+service: serverless-capstone-udacity
 
 plugins:
   - serverless-webpack
@@ -22,9 +22,9 @@ provider:
   # Use these variables in the functions and resouorces section below. For example, 
   # ${self:provider.environment.S3_BUCKET}
   environment:
-    PROJECT_NAME: serverless-capstone
-    TODOS_TABLE: serverless-capstone-${self:provider.stage}
-    S3_BUCKET: serverless-capstone-${self:provider.stage}
+    PROJECT_NAME: serverless-capstone-udacity
+    TODOS_TABLE: serverless-capstone-udacity-${self:provider.stage}
+    S3_BUCKET: serverless-capstone-udacity-${self:provider.stage}
 
 custom:
   documentation:
@@ -191,6 +191,11 @@ functions:
       - stream:
           type: dynamodb
           arn: !GetAtt TodosTable.StreamArn
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - es:*
+        Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/todos-search-capstonee-${self:provider.stage}/*'
 
 resources:
   Resources:
@@ -295,7 +300,7 @@ resources:
       Type: AWS::Elasticsearch::Domain
       Properties:
         ElasticsearchVersion: '6.3'
-        DomainName: todos-search-capstonee-${self:provider.stage}
+        DomainName: todos-search-es-${self:provider.stage}
         ElasticsearchClusterConfig:
           DedicatedMasterEnabled: false
           InstanceCount: '1'
@@ -314,7 +319,7 @@ resources:
               Principal:
                 AWS: '*'
               Action: 'es:*'
-              Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/todos-search-capstonee-${self:provider.stage}/*'
+              Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/todos-search-es-${self:provider.stage}/*'
               Condition:
                 IpAddress:
                   aws:SourceIp:

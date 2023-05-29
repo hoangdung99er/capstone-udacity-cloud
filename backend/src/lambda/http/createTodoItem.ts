@@ -18,7 +18,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         "Access-Control-Allow-Origin": "*",
     },
     body: JSON.stringify({
-        todoItem: toDoItem
+      todoItem: toDoItem
     }),
   }
 }
