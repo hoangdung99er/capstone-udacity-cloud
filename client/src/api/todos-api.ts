@@ -1,29 +1,20 @@
-import { apiEndpoint, esApiEndpoint } from '../config'
-import { Todo, Hits } from '../types/Todo';
+import { apiEndpoint } from '../config'
+import { Todo } from '../types/Todo';
 import { CreateTodoRequest } from '../types/CreateTodoRequest';
 import Axios from 'axios'
 import { UpdateTodoRequest } from '../types/UpdateTodoRequest';
 
-export async function getTodos(): Promise<Todo[]> {
-  const response = await Axios.get(`${esApiEndpoint}/todos-index/_search`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-  const listItem: Todo[] = []
-  response.data.hits.hits.forEach((item: Hits) => {
-    listItem.push(item._source)
-  })
-  return listItem
-}
+export async function getTodos(idToken: string): Promise<Todo[]> {
+  console.log('Fetching todos')
 
-export async function getTodo(todoId: string): Promise<string> {
-  const response = await Axios.get(`${esApiEndpoint}/todos-index/_search?q=todoId:${todoId}`, {
+  const response = await Axios.get(`${apiEndpoint}/todos`, {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`
     },
   })
-  return response.data.hits.hits[0]._id
+  console.log('Todos:', response.data)
+  return response.data.todos
 }
 
 export async function createTodo(
@@ -33,21 +24,10 @@ export async function createTodo(
   const response = await Axios.post(`${apiEndpoint}/todos`,  JSON.stringify(newTodo), {
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${idToken}`
+      'Authorization': `Bearer ${idToken}`,
     }
   })
   return response.data.todoItem
-}
-
-export async function createTodoEs(
-  newTodo: CreateTodoRequest
-): Promise<Todo> {
-  const response = await Axios.post(`${esApiEndpoint}/todos-index/todos`,  JSON.stringify(newTodo), {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  })
-  return response.data.result
 }
 
 export async function patchTodo(
@@ -75,30 +55,15 @@ export async function deleteTodo(
   })
 }
 
-export async function deleteTodoEs(
-  todoId: string
-): Promise<void> {
-  await Axios.delete(`${esApiEndpoint}/todos-index/todos/${todoId}`, {
+export async function searchTodos(idToken: string, text: string): Promise<Todo[]> {
+  const response = await Axios.post(`${apiEndpoint}/todos/search`, JSON.stringify({text}), {
     headers: {
       'Content-Type': 'application/json',
-    }
+      'Authorization': `Bearer ${idToken}`
+    },
   })
-}
-
-export async function searchTodo(
-  todoName: string
-): Promise<Todo[]> {
-  const response = await Axios.get(`${esApiEndpoint}/todos-index/_search${!todoName ? '' : `?q=name:${todoName}`}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  })
-
-  const listItem: Todo[] = []
-  response.data.hits.hits.forEach((item: Hits) => {
-    listItem.push(item._source)
-  })
-  return listItem
+  console.log('Todos:', response.data)
+  return response.data.items
 }
 
 export async function getUploadUrl(

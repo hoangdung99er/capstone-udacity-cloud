@@ -9,8 +9,9 @@ export class TodoDTL {
         private readonly docClientService: DocumentClient = new AWS.DynamoDB.DocumentClient(),
         private readonly s3ClientService: Types = new AWS.S3({ signatureVersion: 'v4' }),
         private readonly todosTable = process.env.TODOS_TABLE,
-        private readonly s3Bucket = process.env.S3_BUCKET) {
-    }
+        private readonly s3Bucket = process.env.S3_BUCKET,
+        private readonly todoCreatedIndex = process.env.TODOS_CREATED_AT_INDEX
+    ) {}
 
     async generateImage(todoId: string): Promise<string> {
         const url: string = this.s3ClientService.getSignedUrl('putObject', {
@@ -46,47 +47,42 @@ export class TodoDTL {
     }
 
     async getAllToDoList(userId: string): Promise<ITodoItem[]> {
-        const params = {
-            TableName: this.todosTable,
-            KeyConditionExpression: "#userId = :userId",
-            ExpressionAttributeNames: {
-                "#userId": "userId"
-            },
-            ExpressionAttributeValues: {
-                ":userId": userId
-            }
-        };
+        const result = await this.docClientService
+            .query({
+                TableName: this.todosTable,
+                IndexName: this.todoCreatedIndex,
+                KeyConditionExpression: 'userId = :pk',
+                ExpressionAttributeValues: {
+                ':pk': userId
+                }
+            })
+            .promise()
 
-        const res = await this.docClientService.query(params).promise();
-        const items = res.Items as ITodoItem[];
-
-        return items;
+        const items = result.Items as ITodoItem[]
+        return items
     }
 
     async updateToDoItem(todoUpdate: ITodoUpdate, todoId: string, userId: string): Promise<ITodoUpdate> {
-        const params = {
-            TableName: this.todosTable,
-            Key: {
-                "userId": userId,
-                "todoId": todoId
-            },
-            UpdateExpression: "set #a = :a, #b = :b, #c = :c",
-            ExpressionAttributeNames: {
-                "#a": "name",
-                "#b": "dueDate",
-                "#c": "done"
-            },
-            ExpressionAttributeValues: {
-                ":a": todoUpdate['name'],
-                ":b": todoUpdate['dueDate'],
-                ":c": todoUpdate['done']
-            },
-            ReturnValues: "ALL_NEW"
-        };
+        await this.docClientService
+            .update({
+                TableName: this.todosTable,
+                Key: {
+                    todoId: todoId,
+                    userId: userId
+                },
+                UpdateExpression:
+                    'set #todo_name = :name, dueDate = :dueDate, done = :done',
+                ExpressionAttributeNames: {
+                    '#todo_name': 'name'
+                },
+                ExpressionAttributeValues: {
+                    ':name': todoUpdate.name,
+                    ':dueDate': todoUpdate.dueDate,
+                    ':done': todoUpdate.done
+                }
+            })
+            .promise()
 
-        const response = await this.docClientService.update(params).promise();
-        const attributes = response.Attributes as ITodoUpdate;
-
-        return attributes;
+        return todoUpdate;
     }
 }

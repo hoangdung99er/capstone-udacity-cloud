@@ -14,7 +14,7 @@ import {
   Loader
 } from 'semantic-ui-react'
 
-import { createTodo, deleteTodo, getTodos, patchTodo, createTodoEs, searchTodo, deleteTodoEs, getTodo } from '../api/todos-api'
+import { createTodo, deleteTodo, getTodos, patchTodo, searchTodos } from '../api/todos-api'
 import Auth from '../auth/Auth'
 import { Todo } from '../types/Todo'
 
@@ -47,9 +47,14 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   }
 
   onSearchText = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const listItem = await searchTodo(this.state.searchTodoName)
+    let todos: Todo[] = []
+    if (this.state.searchTodoName) {
+      todos = await searchTodos(this.props.auth.getIdToken(), this.state.searchTodoName)
+    } else {
+      todos = await getTodos(this.props.auth.getIdToken())
+    }
     this.setState({
-      todos: listItem,
+      todos,
       searchTodoName: ''
     })
   }
@@ -65,8 +70,6 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
         name: this.state.newTodoName,
         dueDate
       })
-      console.log(newTodo)
-      await createTodoEs(newTodo)
       this.setState({
         todos: [...this.state.todos, newTodo],
         newTodoName: ''
@@ -78,9 +81,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
 
   onTodoDelete = async (todoId: string) => {
     try {
-      const _id: string = await getTodo(todoId)
       await deleteTodo(this.props.auth.getIdToken(), todoId)
-      await deleteTodoEs(_id)
       this.setState({
         todos: this.state.todos.filter(todo => todo.todoId !== todoId)
       })
@@ -109,7 +110,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
 
   async componentDidMount() {
     try {
-      const todos = await getTodos()
+      const todos = await getTodos(this.props.auth.getIdToken())
       this.setState({
         todos,
         loadingTodos: false
